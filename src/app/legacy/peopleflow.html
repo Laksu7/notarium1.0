@@ -1,0 +1,169 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#" (click)="$event.preventDefault(); selectPage('Dashboard')">
+      <span class="brand-mark">P</span>
+      <span class="brand-copy"><strong>PeopleFlow</strong><small>Leave Management System</small></span>
+    </a>
+    <div class="side-label">WORKSPACE</div>
+    <nav aria-label="Main navigation">
+      @for (item of navItems; track item.name) {
+        <button class="nav-item" [class.active]="selectedPage === item.name" (click)="selectPage(item.name)">
+          <span class="nav-icon">{{ item.icon }}</span><span>{{ item.name }}</span>
+          @if (item.name === 'Approvals' && pendingRequests.length) { <span class="nav-count">{{ pendingRequests.length }}</span> }
+        </button>
+      }
+    </nav>
+    <div class="side-footer"><span class="secure-dot"></span><span>People first, always</span></div>
+  </aside>
+
+  <div class="main-shell">
+    <header class="topbar">
+      <label class="search-box"><span>⌕</span><input aria-label="Search employees and leave" placeholder="Search employees, leave, or policies..." (input)="showToast('Search is available in the full system')"></label>
+      <div class="top-actions">
+        <button class="top-icon" aria-label="Notifications" (click)="toggleNotifications()">♧<i></i></button>
+        <button class="top-icon help-icon" aria-label="Help" (click)="showToast('Need help? Contact your PeopleFlow administrator.')">?</button>
+        <button class="profile" (click)="showProfileMenu = !showProfileMenu; showNotifications = false">
+          <span class="avatar">AS</span><span class="profile-name"><strong>Althea M. Santos</strong><small>Employee · Manager</small></span><span>⌄</span>
+        </button>
+      </div>
+      @if (showNotifications) {
+        <div class="floating-menu notification-menu">
+          <strong>Notifications</strong>
+          <p>{{ pendingRequests.length }} request{{ pendingRequests.length === 1 ? '' : 's' }} awaiting review</p>
+          <p>Your leave balance was updated recently.</p>
+        </div>
+      }
+      @if (showProfileMenu) {
+        <div class="floating-menu profile-menu">
+          <strong>Althea M. Santos</strong><p>Employee · Manager</p>
+          <button (click)="selectPage('Settings'); showProfileMenu = false">Account settings</button>
+          <button (click)="endSession()">Sign out</button>
+        </div>
+      }
+    </header>
+
+    <main class="content">
+      <section class="page-heading">
+        <div><div class="eyebrow">PEOPLEFLOW <span> / </span> {{ selectedPage | uppercase }}</div>
+          <h1>{{ selectedPage === 'Dashboard' ? 'Leave Management Dashboard' : selectedPage }}</h1>
+          <p>{{ selectedPage === 'Dashboard' ? "Welcome back, Althea! Here’s an overview of your leave and team status." : pageDescription }}</p>
+        </div>
+        <button class="primary-button" (click)="selectPage('Apply for Leave')"><span>＋</span> Apply for Leave</button>
+      </section>
+
+      @if (selectedPage === 'Dashboard') {
+        <section class="stats-grid">
+          <article class="stat-card"><span class="stat-icon blue">▣</span><div><small>Annual Leave Balance</small><strong>12 <span>days</span></strong></div><span class="info">i</span></article>
+          <article class="stat-card"><span class="stat-icon amber">◷</span><div><small>Pending Requests</small><strong>{{ pendingRequests.length }}</strong></div></article>
+          <article class="stat-card"><span class="stat-icon green">✓</span><div><small>Approved This Year</small><strong>{{ approvedThisYear }}</strong></div></article>
+          <article class="stat-card"><span class="stat-icon violet">♙</span><div><small>Team Away Today</small><strong>{{ awayToday || 3 }}</strong></div></article>
+        </section>
+        <section class="dashboard-grid">
+          <article class="panel calendar-panel">
+            <div class="panel-heading"><h2><span class="heading-icon">▦</span> Leave Calendar</h2><button class="text-button" (click)="selectPage('Team Calendar')">Full calendar →</button></div>
+            <div class="calendar-controls"><button aria-label="Previous month" (click)="changeMonth(-1)">‹</button><strong>{{ monthLabel }}</strong><button aria-label="Next month" (click)="changeMonth(1)">›</button><select aria-label="Calendar view"><option>Month</option><option>Week</option></select></div>
+            <div class="calendar-grid">
+              @for (weekday of ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']; track weekday) { <div class="weekday">{{ weekday }}</div> }
+              @for (cell of calendarDays; track $index) {
+                <div class="calendar-cell" [class.empty-cell]="!cell.day" [class.today]="cell.day === 26 && monthLabel === 'November 2026'">
+                  @if (cell.day) { <span>{{ cell.day }}</span>
+                    @if (cell.day === 10 && monthLabel === 'November 2026') { <small class="event event-blue">My Leave (Annual)</small> }
+                    @if (cell.day === 20 && monthLabel === 'November 2026') { <small class="event event-violet">Team Leave</small> }
+                    @if (cell.day === 27 && monthLabel === 'November 2026') { <small class="event event-green">Holiday</small> }
+                  }
+                </div>
+              }
+            </div>
+            <div class="calendar-legend"><span><i class="legend-blue"></i>My leave</span><span><i class="legend-violet"></i>Team leave</span><span><i class="legend-green"></i>Holiday</span></div>
+          </article>
+          <div class="right-column">
+            <article class="panel side-panel">
+              <div class="panel-heading"><h2><span class="heading-icon">♧</span> Upcoming Holidays</h2><button class="text-button" (click)="selectPage('Holidays')">View all</button></div>
+              @for (holiday of holidays; track holiday.name) {
+                <div class="holiday-row"><span class="date-tile"><small>{{ holiday.month }}</small><strong>{{ holiday.day }}</strong></span><span><strong>{{ holiday.name }}</strong><small>{{ holiday.kind }}</small></span></div>
+              }
+            </article>
+            <article class="panel side-panel approvals-panel">
+              <div class="panel-heading"><h2><span class="heading-icon">✓</span> Pending Approvals</h2><button class="text-button" (click)="selectPage('Approvals')">View all</button></div>
+              @for (request of pendingRequests.slice(0, 2); track request.id) {
+                <div class="approval-row"><span class="avatar small-avatar">{{ request.employee.split(' ').map(part => part[0]).slice(0,2).join('') }}</span>
+                  <span class="approval-person"><strong>{{ request.employee }}</strong><small>{{ request.type }} · {{ request.start | date:'MMM d' }} ({{ request.days }} day{{ request.days === 1 ? '' : 's' }})</small></span>
+                  <div class="quick-actions"><button aria-label="Approve request" (click)="updateStatus(request, 'Approved')">✓</button><button aria-label="Reject request" (click)="updateStatus(request, 'Rejected')">×</button></div>
+                </div>
+              } @empty { <p class="empty-note">You’re all caught up.</p> }
+            </article>
+          </div>
+          <article class="panel recent-panel">
+            <div class="panel-heading"><h2><span class="heading-icon">▤</span> My Recent Requests</h2><button class="text-button" (click)="selectPage('My Leave')">View all →</button></div>
+            <div class="table-scroll"><table><thead><tr><th>Request ID</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th></tr></thead>
+              <tbody>@for (request of myRequests.slice(0, 4); track request.id) { <tr><td class="request-id">{{ request.id }}</td><td>{{ request.type }}</td><td>{{ request.start | date:'MMM d, y' }}</td><td>{{ request.end | date:'MMM d, y' }}</td><td>{{ request.days }} day{{ request.days === 1 ? '' : 's' }}</td><td><span class="status" [class]="statusClass(request.status)">{{ request.status }}</span></td></tr> }</tbody>
+            </table></div>
+          </article>
+        </section>
+      }
+
+      @if (selectedPage === 'Apply for Leave') {
+        <section class="form-layout">
+          <article class="panel form-panel"><div class="panel-heading"><h2>Leave Request Details</h2><span class="required-note">* Required fields</span></div>
+            <div class="balance-strip">@for (balance of balances; track balance.type) { <div class="mini-balance"><span class="balance-dot" [class]="balance.color"></span><span><small>{{ balance.type }}</small><strong>{{ balance.days }} <small>days left</small></strong></span></div> }</div>
+            <form (submit)="$event.preventDefault(); submitRequest()">
+              <label class="form-field"><span>Leave type <b>*</b></span><select [(ngModel)]="requestType" name="leaveType"><option>Annual Leave</option><option>Sick Leave</option><option>Casual Leave</option></select></label>
+              <div class="date-fields"><label class="form-field"><span>Start date <b>*</b></span><input type="date" name="startDate" [ngModel]="startDate" (ngModelChange)="setRequestDate('start', $event)"></label><label class="form-field"><span>End date <b>*</b></span><input type="date" name="endDate" [ngModel]="endDate" (ngModelChange)="setRequestDate('end', $event)" [min]="startDate"></label></div>
+              <label class="form-field"><span>Duration</span><input class="readonly-field" [value]="duration > 0 ? duration + ' day' + (duration === 1 ? '' : 's') : 'Select your dates'" readonly></label>
+              <label class="form-field"><span>Reason <b>*</b></span><textarea name="reason" [(ngModel)]="reason" rows="4" maxlength="500" placeholder="Share a brief reason for your leave request..."></textarea><small class="field-hint">Please don’t include sensitive medical or personal details.</small></label>
+              @if (requestError) { <div class="form-error" role="alert">{{ requestError }}</div> }
+              <div class="form-actions"><span>Your request will be sent to your manager.</span><button class="primary-button" type="submit">Submit Request <span>→</span></button></div>
+            </form>
+          </article>
+          <aside class="panel guidance-panel"><span class="guidance-icon">✦</span><h3>Before you submit</h3><ul><li>Check your available leave balance.</li><li>Requests are reviewed by your manager.</li><li>We’ll notify you when the status changes.</li><li>Overlapping requests can’t be submitted.</li></ul><div class="policy-callout"><strong>Need help?</strong><p>Review the leave policy or contact your People team.</p><button class="text-button" (click)="selectPage('Leave Policies')">View leave policies →</button></div></aside>
+        </section>
+      }
+
+      @if (selectedPage === 'My Leave' || selectedPage === 'Approvals') {
+        <section class="panel listing-panel">
+          @if (selectedPage === 'My Leave') {
+            <div class="panel-heading"><div><h2>My Leave Balance</h2><p class="panel-subtitle">Your available allowance for this year</p></div></div>
+            <div class="balance-cards">@for (balance of balances; track balance.type) { <div class="balance-card"><span class="balance-dot" [class]="balance.color"></span><small>{{ balance.type }}</small><strong>{{ balance.days }} <span>days left</span></strong><div class="balance-track"><i [style.width.%]="(balance.days / balance.total) * 100" [class]="balance.color"></i></div><small>{{ balance.days }} of {{ balance.total }} days available</small></div> }</div>
+          }
+          <div class="panel-heading listing-heading"><div><h2>{{ selectedPage === 'My Leave' ? 'Request History' : 'Requests for Review' }}</h2><p class="panel-subtitle">Track status and review leave requests</p></div>
+            @if (selectedPage === 'My Leave') { <button class="primary-button compact-button" (click)="selectPage('Apply for Leave')">＋ New request</button> }
+          </div>
+          <div class="table-scroll"><table><thead><tr>@if (selectedPage === 'Approvals') { <th>Employee</th> }<th>Request ID</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th>@if (selectedPage === 'Approvals') { <th>Actions</th> }</tr></thead>
+            <tbody>@for (request of (selectedPage === 'My Leave' ? myRequests : requests); track request.id) { <tr>@if (selectedPage === 'Approvals') { <td>{{ request.employee }}</td> }<td class="request-id">{{ request.id }}</td><td>{{ request.type }}</td><td>{{ request.start | date:'MMM d, y' }}</td><td>{{ request.end | date:'MMM d, y' }}</td><td>{{ request.days }}</td><td><span class="status" [class]="statusClass(request.status)">{{ request.status }}</span></td>@if (selectedPage === 'Approvals') { <td class="row-actions">@if (request.status === 'Pending') { <button class="approve-button" (click)="updateStatus(request, 'Approved')">Approve</button><button class="reject-button" (click)="updateStatus(request, 'Rejected')">Decline</button> } @else { <span class="muted">Reviewed</span> }</td> }</tr> }</tbody>
+          </table></div>
+        </section>
+      }
+
+      @if (selectedPage === 'Team Calendar') {
+        <section class="panel full-calendar"><div class="panel-heading"><h2>Team Leave Calendar</h2><span class="panel-subtitle">Plan ahead and see team availability</span></div><div class="calendar-controls"><button (click)="changeMonth(-1)">‹</button><strong>{{ monthLabel }}</strong><button (click)="changeMonth(1)">›</button></div><div class="calendar-grid expanded-calendar">@for (weekday of ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; track weekday) { <div class="weekday">{{ weekday }}</div> }@for (cell of calendarDays; track $index) { <div class="calendar-cell" [class.empty-cell]="!cell.day"><span>{{ cell.day || '' }}</span>@if (cell.day === 10 && monthLabel === 'November 2026') { <small class="event event-blue">Althea · Annual leave</small> }@if (cell.day === 20 && monthLabel === 'November 2026') { <small class="event event-violet">Team leave</small> }@if (cell.day === 27 && monthLabel === 'November 2026') { <small class="event event-green">Bonifacio Day</small> }</div> }</div></section>
+      }
+
+      @if (selectedPage === 'Holidays') {
+        <section class="panel listing-panel"><div class="panel-heading"><div><h2>Company Holidays</h2><p class="panel-subtitle">Upcoming public holidays for 2026</p></div></div>@for (holiday of holidays; track holiday.name) { <div class="holiday-row holiday-list-row"><span class="date-tile"><small>{{ holiday.month }}</small><strong>{{ holiday.day }}</strong></span><span><strong>{{ holiday.name }}</strong><small>{{ holiday.kind }} · Office closed</small></span></div> }</section>
+      }
+
+      @if (selectedPage === 'Leave Policies') {
+        <section class="info-grid"><article class="panel policy-card"><span class="stat-icon blue">▣</span><h2>Annual Leave</h2><p>15 paid days per calendar year. Submit requests in advance so your manager can plan team coverage.</p><span class="policy-tag">12 days remaining</span></article><article class="panel policy-card"><span class="stat-icon green">＋</span><h2>Sick Leave</h2><p>10 paid days per calendar year for health-related absences. Notify your manager as soon as possible.</p><span class="policy-tag">10 days remaining</span></article><article class="panel policy-card"><span class="stat-icon violet">✦</span><h2>Casual Leave</h2><p>5 paid days per calendar year for personal matters. Requests are subject to team availability.</p><span class="policy-tag">5 days remaining</span></article></section>
+      }
+
+      @if (selectedPage === 'Reports') {
+        <section class="stats-grid report-stats"><article class="stat-card"><span class="stat-icon blue">▤</span><div><small>Total requests</small><strong>{{ requests.length }}</strong></div></article><article class="stat-card"><span class="stat-icon amber">◷</span><div><small>Awaiting review</small><strong>{{ pendingRequests.length }}</strong></div></article><article class="stat-card"><span class="stat-icon green">✓</span><div><small>Approved requests</small><strong>{{ approvedRequestsCount }}</strong></div></article></section>
+        <section class="panel listing-panel"><div class="panel-heading"><div><h2>Leave activity</h2><p class="panel-subtitle">A clear record of submitted and reviewed requests</p></div><button class="secondary-button" (click)="exportBackup()">Export data</button></div><div class="table-scroll"><table><thead><tr><th>Request</th><th>Employee</th><th>Leave Type</th><th>Duration</th><th>Status</th></tr></thead><tbody>@for (request of requests; track request.id) { <tr><td class="request-id">{{ request.id }}</td><td>{{ request.employee }}</td><td>{{ request.type }}</td><td>{{ request.days }} day{{ request.days === 1 ? '' : 's' }}</td><td><span class="status" [class]="statusClass(request.status)">{{ request.status }}</span></td></tr> }</tbody></table></div></section>
+      }
+
+      @if (selectedPage === 'Employees') {
+        <section class="panel listing-panel"><div class="panel-heading"><div><h2>Team Directory</h2><p class="panel-subtitle">People and leave availability</p></div></div>@for (person of [{name:'Althea M. Santos', role:'Employee · Manager', initials:'AS'}, {name:'Juan Dela Cruz', role:'Operations', initials:'JD'}, {name:'Maria Torres', role:'People team', initials:'MT'}]; track person.name) { <div class="employee-row"><span class="avatar">{{ person.initials }}</span><span><strong>{{ person.name }}</strong><small>{{ person.role }}</small></span><span class="employee-status"><i></i> Active</span></div> }</section>
+      }
+
+      @if (selectedPage === 'Audit Log') {
+        <section class="panel listing-panel"><div class="panel-heading"><div><h2>Audit Log</h2><p class="panel-subtitle">Important leave and account activity recorded for accountability</p></div></div><div class="security-note">Audit entries in this prototype are stored in this browser only. A production system should use a protected, server-side, tamper-resistant audit trail.</div><div class="table-scroll"><table><thead><tr><th>Activity</th><th>Details</th><th>Performed by</th><th>Date &amp; time</th></tr></thead><tbody>@for (entry of auditEntries; track $index) { <tr><td class="cell-strong">{{ entry.action }}</td><td>{{ entry.detail }}</td><td>{{ entry.actor }}</td><td>{{ entry.time }}</td></tr> }</tbody></table></div></section>
+      }
+
+      @if (selectedPage === 'Settings') {
+        <section class="settings-grid"><article class="panel setting-card"><span class="stat-icon blue">◉</span><div><h2>Session security</h2><p>This demo keeps data in browser storage. Signing out clears the local session marker. Production sessions should use secure, server-managed cookies and expire on logout.</p><span class="setting-badge">Browser-only demo</span></div></article><article class="panel setting-card"><span class="stat-icon green">↧</span><div><h2>Backup &amp; recovery</h2><p>Download a JSON copy of the current leave requests and audit history. Store backups securely and test recovery procedures regularly.</p><button class="secondary-button" (click)="exportBackup()">Download backup</button></div></article><article class="panel setting-card"><span class="stat-icon amber">♙</span><div><h2>Role-based access</h2><p>Approval actions and employee records should be restricted by role on the server in a production deployment.</p><span class="setting-badge">Current view: Employee · Manager</span></div></article><article class="panel setting-card"><span class="stat-icon violet">✓</span><div><h2>Data quality</h2><p>Request forms validate required fields, date ranges, available leave balance, and overlaps with active requests.</p><span class="setting-badge">Validation enabled</span></div></article></section>
+      }
+    </main>
+    <footer class="app-footer"><span>© 2026 PeopleFlow</span><span>Leave made simple <i></i> Your data, handled with care</span></footer>
+  </div>
+  @if (toastMessage) { <div class="toast-message" role="status"><span>✓</span>{{ toastMessage }}</div> }
+</div>
