@@ -5,7 +5,7 @@ import { filter } from 'rxjs';
 import { AuthService } from '../../core/auth';
 import { RecordsService } from '../../core/records';
 import { DocTypesService } from '../../core/doctypes';
-import { NotarizationRecord, STATUSES, fmtDate, monthYearLabel } from '../../core/models';
+import { NotarizationRecord, STATUSES, fmtDate, monthYearLabel, FORM_STATUSES, LOCATIONS, RecordStatus, locationFor } from '../../core/models';
 import { UiIcon } from '../../shared/icon';
 import { UiModal } from '../../shared/modal';
 
@@ -86,8 +86,40 @@ import { UiModal } from '../../shared/modal';
                     <td>{{ r.type }}</td>
                     <td>{{ r.clientName }}</td>
                     <td>{{ fmt(r.dateNotarized) }}</td>
-                    <td>{{ r.status }}</td>
-                    <td>{{ r.location }}</td>
+                    <td class="d-status">
+                      <select
+                        class="field row-field"
+                        [attr.name]="'dashStatus' + r.id"
+                        [ngModel]="r.status"
+                        (ngModelChange)="setStatus(r, $event)"
+                      >
+                        @for (s of rowStatuses(r); track s) {
+                          <option [value]="s">{{ s }}</option>
+                        }
+                      </select>
+                    </td>
+                    <td class="d-loc">
+                      @if (locationLocked(r)) {
+                        <input
+                          class="field row-field field-locked"
+                          [attr.name]="'dashLocL' + r.id"
+                          [value]="r.location"
+                          disabled
+                          [title]="'Assigned automatically: ' + r.status"
+                        />
+                      } @else {
+                        <select
+                          class="field row-field"
+                          [attr.name]="'dashLoc' + r.id"
+                          [ngModel]="r.location"
+                          (ngModelChange)="setLocation(r, $event)"
+                        >
+                          @for (l of locations; track l) {
+                            <option [value]="l">{{ l }}</option>
+                          }
+                        </select>
+                      }
+                    </td>
                     <td class="td-actions">
                       <div class="acts">
                         <button class="icon-btn" title="View" type="button" (click)="openView(r)">
@@ -250,7 +282,7 @@ import { UiModal } from '../../shared/modal';
       @media (max-width: 1240px) {
         .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
-      @media (max-width: 1120px) {
+      @media (max-width: 1320px) {
         .dash { grid-template-columns: 1fr; }
         aside.dash-side {
           display: grid;
@@ -297,10 +329,26 @@ import { UiModal } from '../../shared/modal';
         padding: 20px 20px 16px;
       }
 
-      .acts { display: inline-flex; gap: 8px; }
-      .acts .icon-btn { width: 32px; height: 32px; }
+      .acts { display: inline-flex; gap: 4px; }
+      .acts .icon-btn { width: 26px; height: 26px; }
 
-      aside.dash-side { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+      /* compact recent table — same inline controls as the records page */
+      .recent .table th { padding: 11px 6px; font-size: 10.5px; letter-spacing: 0.06em; }
+      .recent .table td { padding: 10px 6px; font-size: 13px; }
+      .recent .table td .doc-no { font-size: 13px; }
+      .recent td .row-field {
+        width: 118px;
+        min-width: 118px;
+        height: 36px;
+        font-size: 12.5px;
+        padding: 5px 8px;
+      }
+      .recent td select.row-field { padding-right: 22px; }
+      .field-locked { background: #f4f1e9; color: #5a6470; cursor: not-allowed; }
+
+      @media (min-width: 1321px) {
+        aside.dash-side { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+      }
       .side-card { padding: 20px 20px 22px; }
 
       .f-search {
@@ -411,6 +459,32 @@ export class Dashboard {
 
   statuses = STATUSES;
   typeNames = this.dts.names();
+
+  /** Only the two statuses allowed on forms and row updates. */
+  formStatuses = FORM_STATUSES;
+  locations = LOCATIONS;
+
+  /** Status choices for a row: legacy rows keep their current value selectable. */
+  rowStatuses(r: NotarizationRecord): RecordStatus[] {
+    return r.status === 'In Office' ? ['In Office', ...this.formStatuses] : this.formStatuses;
+  }
+
+  /** Location follows status for the two main statuses. */
+  locationLocked(r: NotarizationRecord): boolean {
+    return FORM_STATUSES.includes(r.status);
+  }
+
+  /** One-row status change — location is re-assigned automatically. */
+  setStatus(r: NotarizationRecord, v: RecordStatus): void {
+    const location = locationFor(v, r.location);
+    this.rec.update(r.id, { status: v, location });
+    this.showToast(`Status updated — moved to ${location}.`);
+  }
+
+  setLocation(r: NotarizationRecord, v: string): void {
+    this.rec.update(r.id, { location: v });
+    this.showToast('Location updated.');
+  }
 
   // quick filters
   searchTerm = '';

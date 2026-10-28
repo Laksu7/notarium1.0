@@ -126,6 +126,12 @@ import { UiIcon } from '../shared/icon';
         color: #c8d3ca;
       }
       .sb-logout:hover { color: #fff; }
+
+      /* narrow windows: slide the rail away when the layout closes it */
+      .sb { transition: transform 0.25s ease; }
+      @media (max-width: 1140px) {
+        :host(.sb-closed) .sb { transform: translateX(-104%); }
+      }
     `,
   ],
 })

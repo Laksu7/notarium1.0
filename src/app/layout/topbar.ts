@@ -65,6 +65,11 @@ import { UiIcon } from '../shared/icon';
         z-index: 20;
       }
       .tb-crumb { display: flex; align-items: center; gap: 10px; }
+
+      /* narrow windows: keep the crumb clear of the floating menu button */
+      @media (max-width: 1140px) {
+        :host(.tb-shifted) .tb { padding-left: 66px; }
+      }
       .tb-brand {
         font-size: 12px;
         letter-spacing: 0.24em;
