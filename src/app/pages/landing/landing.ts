@@ -2,10 +2,11 @@ import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth';
 import { UiIcon } from '../../shared/icon';
+import { LogoMark } from '../../shared/logo';
 
 @Component({
   selector: 'app-landing',
-  imports: [UiIcon],
+  imports: [UiIcon, LogoMark],
   template: `
     <div class="land">
       <!-- decorative shapes -->
@@ -28,16 +29,7 @@ import { UiIcon } from '../../shared/icon';
 
       <main class="land-inner">
         <div class="land-mark">
-          <svg viewBox="0 0 120 88" width="108" height="80" fill="none">
-            <g opacity="0.35" stroke="#c9a544" stroke-width="2">
-              <rect x="76" y="4" width="30" height="40" rx="4" />
-              <path d="M82 14h12M82 22h16M82 30h10" stroke-linecap="round" />
-            </g>
-            <ellipse cx="50" cy="56" rx="36" ry="13" stroke="#c9a544" stroke-width="5.5" transform="rotate(-16 50 56)" />
-            <path d="M56 12c10 13 13 24 7 33l-7 9-8-10c-6-10-2-20 8-32z" fill="#c9a544" />
-            <path d="M55 30v22" stroke="#7c5c14" stroke-width="2" stroke-linecap="round" />
-            <circle cx="55" cy="49" r="2.6" fill="#7c5c14" />
-          </svg>
+          <app-logo-mark tone="light" [logoWidth]="128" />
         </div>
 
         <h1 class="land-title">NOTAR<span>IX</span></h1>

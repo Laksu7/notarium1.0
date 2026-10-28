@@ -3,10 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth';
 import { UiIcon } from '../../shared/icon';
+import { LogoMark } from '../../shared/logo';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, UiIcon],
+  imports: [FormsModule, UiIcon, LogoMark],
   template: `
     <div class="lgn">
       <div class="lgn-corner tl"><span class="ring"></span></div>
@@ -17,16 +18,7 @@ import { UiIcon } from '../../shared/icon';
 
       <div class="lgn-center">
         <div class="lgn-brand">
-          <svg viewBox="0 0 120 88" width="120" height="88" fill="none">
-            <g opacity="0.35" stroke="#c9a544" stroke-width="2">
-              <rect x="76" y="4" width="30" height="40" rx="4" />
-              <path d="M82 14h12M82 22h16M82 30h10" stroke-linecap="round" />
-            </g>
-            <ellipse cx="50" cy="56" rx="36" ry="13" stroke="#c9a544" stroke-width="6" transform="rotate(-16 50 56)" />
-            <path d="M56 12c10 13 13 24 7 33l-7 9-8-10c-6-10-2-20 8-32z" fill="#c9a544" />
-            <path d="M55 30v22" stroke="#7c5c14" stroke-width="2" stroke-linecap="round" />
-            <circle cx="55" cy="49" r="2.6" fill="#7c5c14" />
-          </svg>
+          <app-logo-mark tone="color" [logoWidth]="158" />
         </div>
         <div class="lgn-name">NOTARIX</div>
         <div class="lgn-line1">Digitalized Notarization</div>
@@ -128,7 +120,7 @@ import { UiIcon } from '../../shared/icon';
       .b2 { bottom: 16%; left: 24%; width: 210px; height: 170px; opacity: 0.28; }
       .b3 { top: 34%; right: 12%; width: 260px; height: 260px; border-radius: 50%; opacity: 0.22; }
 
-      .lgn-center { position: relative; z-index: 2; text-align: center; padding: 30px 16px 40px; }
+      .lgn-center { position: relative; z-index: 2; text-align: center; padding: 14px 16px 22px; }
       .lgn-brand { display: inline-block; }
       .lgn-name {
         margin-top: 6px;
