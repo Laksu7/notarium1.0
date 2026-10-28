@@ -24,15 +24,6 @@ import { UiModal } from '../../shared/modal';
           <article class="stat is-total">
             <span class="stat-label">Total Records</span>
             <div class="stat-num">{{ vit().total }}</div>
-            <div class="stat-sub">
-              @if (vit().diff > 0) {
-                <span>&#8593; +{{ vit().diff }}</span> from {{ vit().prevMonthName }}
-              } @else if (vit().diff < 0) {
-                <span>&#8595; {{ vit().diff }}</span> from {{ vit().prevMonthName }}
-              } @else {
-                No change from {{ vit().prevMonthName }}
-              }
-            </div>
           </article>
 
           <article class="stat">
