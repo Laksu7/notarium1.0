@@ -52,24 +52,48 @@ interface RecordForm {
           @if (fApplied) { <span class="filter-dot"></span> }
         </button>
 
-        <button class="btn btn-light" type="button" (click)="openTrack()">
-          <ui-icon name="login" size="15" /> Track Status &amp; Location
-        </button>
-
         <button class="btn btn-green add-btn" type="button" (click)="openAdd()">
           <ui-icon name="plus" size="16" /> Add Record
         </button>
       </div>
 
       <section class="panel">
+        @if (selected.length > 0) {
+          <div class="bulk-bar">
+            <span class="bulk-count">{{ selected.length }} selected</span>
+            <select class="field bulk-status" name="bulkStatus" [ngModel]="bulkStatus" (ngModelChange)="bulkStatus = $event">
+              <option value="" disabled>Bulk update status…</option>
+              @for (s of formStatuses; track s) {
+                <option [value]="s">{{ s }}</option>
+              }
+            </select>
+            <button class="btn btn-green" type="button" [disabled]="!bulkStatus" (click)="applyBulk()">
+              <ui-icon name="edit" size="15" /> Update Selected Records
+            </button>
+            <button class="btn btn-light" type="button" (click)="clearSelection()">Clear</button>
+          </div>
+        }
+
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
-                <th>Document No.</th>
+                <th class="th-doc" title="Select all displayed records">
+                  <div class="doc-wrap head">
+                    <input
+                      type="checkbox"
+                      name="selAllPage"
+                      [ngModel]="allPageSelected"
+                      [indeterminate]="somePageSelected && !allPageSelected"
+                      (ngModelChange)="toggleAllPage($event)"
+                      [disabled]="pagedRows.length === 0"
+                    />
+                    <span>Doc No.</span>
+                  </div>
+                </th>
                 <th>Type</th>
-                <th>Client Name</th>
-                <th>Date Notarized</th>
+                <th title="Client Name">Client</th>
+                <th title="Date Notarized">Date</th>
                 <th>Status</th>
                 <th>Location</th>
                 <th class="th-actions">Actions</th>
@@ -77,8 +101,19 @@ interface RecordForm {
             </thead>
             <tbody>
               @for (r of pagedRows; track r.id) {
-                <tr>
-                  <td class="doc-no">{{ r.documentNo }}</td>
+                <tr [class.picked-row]="selected.includes(r.id)">
+                  <td class="td-doc">
+                    <div class="doc-wrap">
+                      <input
+                        type="checkbox"
+                        [attr.name]="'ck' + r.id"
+                        title="Select this record"
+                        [ngModel]="selected.includes(r.id)"
+                        (ngModelChange)="toggleRow($event, r.id)"
+                      />
+                      <b class="doc-no" [title]="r.clientName">{{ r.documentNo }}</b>
+                    </div>
+                  </td>
                   <td>{{ r.type }}</td>
                   <td>{{ r.clientName }}</td>
                   <td>{{ fmt(r.dateNotarized) }}</td>
@@ -282,101 +317,6 @@ interface RecordForm {
       </ng-template>
     </ui-modal>
 
-    <!-- track status & location -->
-    <ui-modal [open]="trackOpen" title="Track Status &amp; Location" width="780px" (close)="closeTrack()">
-      <div class="track-toolbar">
-        <div class="rc-search track-search">
-          <ui-icon name="search" size="15" />
-          <input
-            name="trackSearch"
-            placeholder="Search by document no., type, or client name…"
-            [ngModel]="trackSearch"
-            (ngModelChange)="trackSearch = $event"
-          />
-        </div>
-      </div>
-
-      @if (trackRows.length > 0) {
-        <div class="bulk-bar">
-          <label class="cb sel-all">
-            <input
-              type="checkbox"
-              name="selAll"
-              [ngModel]="allTrackSelected"
-              [indeterminate]="someTrackSelected && !allTrackSelected"
-              (ngModelChange)="toggleAllTrack($event)"
-            />
-            <span>Select all shown</span>
-          </label>
-          <span class="bulk-count">{{ selected.length }} selected</span>
-          <select class="field bulk-status" name="bulkStatus" [ngModel]="bulkStatus" (ngModelChange)="bulkStatus = $event" [disabled]="selected.length === 0">
-            <option value="" disabled>Bulk update status…</option>
-            @for (s of formStatuses; track s) {
-              <option [value]="s">{{ s }}</option>
-            }
-          </select>
-          <button
-            class="btn btn-green"
-            type="button"
-            [disabled]="selected.length === 0 || !bulkStatus"
-            (click)="applyBulk()"
-          >
-            <ui-icon name="edit" size="15" /> Update Selected Records
-          </button>
-        </div>
-      } @else if (rec.list().length > 0) {
-        <p class="empty-text">No records match your search.</p>
-      } @else {
-        <p class="empty-text">No records to track yet.</p>
-      }
-
-      <div class="track-list">
-        @for (r of trackRows; track r.id; let i = $index) {
-          <div class="track-row" [class.picked]="selected.includes(r.id)">
-            <label class="cb">
-              <input
-                type="checkbox"
-                name="ck{{ i }}"
-                [ngModel]="selected.includes(r.id)"
-                (ngModelChange)="toggleTrack($event, r.id)"
-              />
-            </label>
-            <div class="track-doc">
-              <b>{{ r.documentNo }}</b>
-              <small>{{ r.type }} · {{ r.clientName }}</small>
-            </div>
-            <select
-              class="field"
-              [attr.name]="'trkStatus' + i"
-              title="Status"
-              [ngModel]="r.status"
-              (ngModelChange)="setStatus(r, $event)"
-            >
-              @for (s of rowStatuses(r); track s) {
-                <option [value]="s">{{ s }}</option>
-              }
-            </select>
-            <select
-              class="field"
-              [attr.name]="'trkLoc' + i"
-              title="Location"
-              [disabled]="locationLocked(r)"
-              [ngModel]="r.location"
-              (ngModelChange)="setLocation(r, $event)"
-            >
-              @for (l of locations; track l) {
-                <option [value]="l">{{ l }}</option>
-              }
-            </select>
-          </div>
-        }
-      </div>
-      <p class="track-note">Changes are saved automatically. Location follows the record's status.</p>
-      <ng-template #foot>
-        <button class="btn btn-green" type="button" (click)="closeTrack()">Done</button>
-      </ng-template>
-    </ui-modal>
-
     <!-- delete confirm -->
     <ui-modal [open]="delRec !== null" title="Delete Record" width="440px" (close)="delRec = null">
       <p class="del-text">
@@ -428,13 +368,56 @@ interface RecordForm {
       }
       .toolbar .btn { position: relative; }
 
-      .acts { display: inline-flex; gap: 8px; }
-      .acts .icon-btn { width: 32px; height: 32px; }
+      /* compact table so checkbox → action columns all fit on screen */
+      .table th { padding: 11px 6px; font-size: 10.5px; letter-spacing: 0.06em; }
+      .table td { padding: 10px 6px; font-size: 13px; }
+      .table td .doc-no { font-size: 13px; }
 
-      /* inline Status / Location controls taken from the record form */
-      td.td-status, td.td-loc { min-width: 152px; }
-      td .row-field { height: 40px; font-size: 13.5px; padding: 8px 12px; }
-      td select.row-field { padding-right: 30px; }
+      .acts { display: inline-flex; gap: 4px; }
+      .acts .icon-btn { width: 26px; height: 26px; }
+
+      /* checkbox is part of the Doc No. column */
+      .doc-wrap { display: flex; align-items: center; gap: 7px; }
+      .doc-wrap input[type='checkbox'] {
+        width: 15px;
+        height: 15px;
+        accent-color: var(--navy);
+        cursor: pointer;
+        flex: 0 0 auto;
+      }
+      .picked-row td { background: #fbf8ee; }
+
+      /* inline Status / Location controls — fixed width so text never clips */
+      td .row-field {
+        width: 118px;
+        min-width: 118px;
+        height: 36px;
+        font-size: 12.5px;
+        padding: 5px 8px;
+      }
+      td select.row-field { padding-right: 22px; }
+
+      /* very narrow windows: fold the Type column away (still in View/Edit/search) */
+      @media (max-width: 1020px) {
+        .table th:nth-of-type(2),
+        .table td:nth-of-type(2) { display: none; }
+      }
+
+      /* bulk bar shown above the table when records are selected */
+      .bulk-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: #fbf8ee;
+        border: 1px solid #eee7d2;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin: 0 12px 16px;
+      }
+      .bulk-count { font-size: 12.5px; font-weight: 600; color: #6b7280; min-width: 78px; }
+      .bulk-status { width: 220px; }
+      .bulk-bar .field { padding: 8px 10px; font-size: 13px; height: 38px; }
 
       /* form */
       .form-grid { display: grid; gap: 16px; }
@@ -463,59 +446,10 @@ interface RecordForm {
       .rd-row b { color: #263444; font-weight: 600; text-align: right; }
       .rd-row .doc-no { color: var(--navy); font-weight: 700; }
 
-      .empty-text { color: #8a8f98; font-size: 14px; padding: 6px 2px; }
-
-      /* track modal */
-      .track-toolbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
-      .track-search { width: 320px; height: 40px; }
-
-      .bulk-bar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        background: #fbf8ee;
-        border: 1px solid #eee7d2;
-        border-radius: 10px;
-        padding: 10px 12px;
-        margin: 6px 0 4px;
-      }
-      .bulk-count { font-size: 12.5px; font-weight: 600; color: #6b7280; min-width: 78px; }
-      .bulk-status { width: 220px; }
-      .bulk-bar .field { padding: 8px 10px; font-size: 13px; height: 38px; }
-
-      .cb { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
-      .cb input[type='checkbox'] {
-        width: 17px;
-        height: 17px;
-        accent-color: var(--navy);
-        cursor: pointer;
-        flex: 0 0 auto;
-      }
-      .sel-all { font-size: 12.5px; font-weight: 600; color: #3f4954; }
-
-      .track-list { max-height: 46vh; overflow-y: auto; padding-right: 2px; }
-      .track-row {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) 150px 150px;
-        gap: 12px;
-        align-items: center;
-        padding: 11px 2px;
-        border-bottom: 1px solid #f0ede3;
-      }
-      .track-row:last-child { border-bottom: 0; }
-      .track-row.picked { background: #fbf8ee; }
-      .track-doc b { display: block; color: var(--navy); font-weight: 700; font-size: 14px; }
-      .track-doc small { display: block; color: #8a8f98; font-size: 12.5px; margin-top: 2px; }
-      .track-note { margin-top: 12px; font-size: 12.5px; color: #98a0aa; }
-
       .del-text { font-size: 14.5px; color: #3f4954; line-height: 1.6; }
 
       @media (max-width: 720px) {
-        .track-row { grid-template-columns: auto 1fr; }
         .fg-pair { grid-template-columns: 1fr; }
-        .track-search { width: 100%; }
-        .track-toolbar { justify-content: stretch; }
       }
     `,
   ],
@@ -545,7 +479,6 @@ export class Records implements OnInit {
   fStatusDraft = '';
 
   filterOpen = false;
-  trackOpen = false;
   viewRec: NotarizationRecord | null = null;
   delRec: NotarizationRecord | null = null;
 
@@ -553,8 +486,7 @@ export class Records implements OnInit {
   submitted = false;
   form: RecordForm = this.emptyForm();
 
-  // ----- track (Document Status & Location) state -----
-  trackSearch = '';
+  /** selection ids + chosen bulk status, feeding the bulk bar above the table */
   selected: number[] = [];
   bulkStatus: RecordStatus | '' = '';
 
@@ -707,46 +639,33 @@ export class Records implements OnInit {
     this.filterOpen = false;
   }
 
-  openTrack(): void {
-    this.trackSearch = '';
-    this.selected = [];
-    this.bulkStatus = '';
-    this.trackOpen = true;
+  // ----- selection & bulk update (Document Status & Location management) -----
+  get allPageSelected(): boolean {
+    const rows = this.pagedRows;
+    return rows.length > 0 && rows.every((r) => this.selected.includes(r.id));
   }
 
-  closeTrack(): void {
-    this.trackOpen = false;
-    this.selected = [];
-    this.bulkStatus = '';
+  get somePageSelected(): boolean {
+    const rows = this.pagedRows;
+    return rows.length > 0 && rows.some((r) => this.selected.includes(r.id)) && !this.allPageSelected;
   }
 
-  /** Records shown in the Track dialog (search narrows these). */
-  get trackRows(): NotarizationRecord[] {
-    const q = this.trackSearch.trim().toLowerCase();
-    if (!q) return this.rec.list();
-    return this.rec.list().filter((r) =>
-      (r.documentNo + ' ' + r.type + ' ' + r.clientName).toLowerCase().includes(q),
-    );
-  }
-
-  get allTrackSelected(): boolean {
-    return this.trackRows.length > 0 && this.trackRows.every((r) => this.selected.includes(r.id));
-  }
-
-  get someTrackSelected(): boolean {
-    const rows = this.trackRows;
-    return rows.some((r) => this.selected.includes(r.id)) && !this.allTrackSelected;
-  }
-
-  toggleTrack(checked: boolean, id: number): void {
+  toggleRow(checked: boolean, id: number): void {
     this.selected = checked ? [...this.selected, id] : this.selected.filter((x) => x !== id);
   }
 
-  toggleAllTrack(checked: boolean): void {
-    this.selected = checked ? this.trackRows.map((r) => r.id) : this.selected.filter((id) => !this.trackRows.some((r) => r.id === id));
+  /** Select-all applies to the records currently displayed on this page. */
+  toggleAllPage(checked: boolean): void {
+    const ids = this.pagedRows.map((r) => r.id);
+    this.selected = checked ? [...new Set([...this.selected, ...ids])] : this.selected.filter((id) => !ids.includes(id));
   }
 
-  /** Status choices for a track row: legacy rows keep their current value selectable. */
+  clearSelection(): void {
+    this.selected = [];
+    this.bulkStatus = '';
+  }
+
+  /** Status choices for a row: legacy rows keep their current value selectable. */
   rowStatuses(r: NotarizationRecord): RecordStatus[] {
     return r.status === 'In Office' ? ['In Office', ...this.formStatuses] : this.formStatuses;
   }
@@ -767,7 +686,7 @@ export class Records implements OnInit {
     this.showToast('Location updated.');
   }
 
-  /** Bulk-update every selected record to the chosen status (location follows). */
+  /** Bulk-update every selected record at once (location follows the status). */
   applyBulk(): void {
     if (this.selected.length === 0) {
       this.showToast('Select at least one record first.', true);
@@ -780,8 +699,7 @@ export class Records implements OnInit {
     const ids = [...this.selected];
     this.rec.bulkUpdate(ids, { status: this.bulkStatus });
     this.showToast(`${ids.length} record${ids.length === 1 ? '' : 's'} updated — moved to ${locationFor(this.bulkStatus)}.`);
-    this.selected = [];
-    this.bulkStatus = '';
+    this.clearSelection();
   }
 
   openDelete(r: NotarizationRecord): void {
