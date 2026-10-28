@@ -24,6 +24,7 @@ import { UiModal } from '../../shared/modal';
           <article class="stat is-total">
             <span class="stat-label">Total Records</span>
             <div class="stat-num">{{ vit().total }}</div>
+            <div class="stat-sub">This month</div>
           </article>
 
           <article class="stat">
